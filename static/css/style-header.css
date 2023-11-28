@@ -1,0 +1,65 @@
+#header_row_1_sec{
+    padding: 5px 15px;
+}
+#header_row_1_sec .logo_img{
+    height: 79.98px;
+}
+#language-selection-wrapper{
+    align-self: start;
+}
+#language-selection-wrapper > a{
+    cursor: pointer;
+}
+#language-selection-wrapper > a:hover{
+    border-bottom: 2px solid #d7b763;
+}
+#header_top_right_sec_ul{
+    gap: 0;
+}
+#header_top_right_sec_ul li{
+    border: 1px solid black;
+    border-radius: 20px;
+    margin: 2px;
+    max-width: 150px;
+    height: 26.6px;
+    -webkit-border-radius: 20px;
+    -moz-border-radius: 20px;
+    -ms-border-radius: 20px;
+    -o-border-radius: 20px;
+    font-size: 13px;
+    overflow: hidden;
+}
+.premium_access_btn,
+.reg_login_btn,
+.search-input-container {
+    display: flex;
+    gap: 8px;
+    margin: 2px;
+    align-items: center;
+} 
+.search-input-container{
+    height: 25px !important;
+}
+.premium_icon,
+.header_userIcon{
+    width: 21px;
+    font-size: 21px;
+    aspect-ratio: 1/1 !important;
+}
+.header_searchIcon{
+    font-size: 14px;
+    margin-left: 4px;
+}
+#header_top_right_sec_ul li:first-child{
+    color: #520f0f;
+    background: #d7b763;
+}
+.reg_login_btn {
+    color: #4a4a4a;
+    background: #fff;   
+}
+.search-input-desktop{
+    outline: none;
+    border: none;
+    background: transparent;
+}

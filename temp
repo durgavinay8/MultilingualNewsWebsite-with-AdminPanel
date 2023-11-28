@@ -1,0 +1,34 @@
+# def translate_tag(tag, translator, target_language):
+#     translated_tag = tag
+#     for child in translated_tag.contents:
+#         if isinstance(child, NavigableString):
+#             translated_text = translator.translate(str(child), dest=target_language).text
+#             child.replace_with(translated_text)
+#         elif child is not None and child.name:
+#             translated_child = translate_tag(child, translator, target_language)
+#             child.replace_with(translated_child)
+
+#     return translated_tag
+
+
+
+ # if language!='en':
+    #     soup = BeautifulSoup(article.content, 'html.parser')
+    #     translator = Translator()
+        
+    #     for p_tag in soup.find_all('p'):
+    #         translated_fragments = []
+
+    #         for child in p_tag.contents:
+    #             if isinstance(child, NavigableString):
+    #                 translated_text = translator.translate(str(child), dest=language).text
+    #                 translated_fragments.append(translated_text)
+    #             elif child is not None and child.name:
+    #                 translated_child = translate_tag(child, translator, language)
+    #                 translated_fragments.append(str(translated_child))
+
+    #         p_tag.clear()
+    #         p_tag.append(BeautifulSoup(''.join(translated_fragments), 'html.parser'))
+    #     html_content = str(soup)
+    # else:
+    #     html_content=article.content

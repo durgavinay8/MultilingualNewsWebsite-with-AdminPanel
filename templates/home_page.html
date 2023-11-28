@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+        <link rel="stylesheet" href="../static/css/style-home-page.css">
+        <link rel="alternate" hreflang="en" href="http://example.com/en/page" />
+        <link rel="alternate" hreflang="es" href="http://example.com/es/page" />
+        <link rel="alternate" hreflang="fr" href="http://example.com/fr/page" />
+
+    </head>
+    <body>
+        {% include 'header.html' %}
+        <main>
+            {% for article in articles %}
+                <div class="article_card">
+                    <a href='/{{language}}/article/{{ article.article_id }}' class="flex-column">
+                        <img src="{{ article.main_img_url }}" alt="image" class="article_img">
+                        <p class="article_title">{{ article['title_' + language] }}</p>
+                        <span class="article_date_time">{{ article.date_time.strftime('%d-%m-%Y %M:%M:%S') }}</span>
+                    </a>
+                </div>
+            {% endfor %}
+        </main>
+        <!-- {% include 'footer.html' %} -->
+        <script>
+            const getLanguageFromCookie = async()=>{
+                return document.cookie
+                .split("; ")
+                .find((row) => row.startsWith("article_lang="))
+                ?.split("=")[1];
+            };
+            const changeLanguage = async(langToBeSet)=>{
+                const language = await getLanguageFromCookie();
+                if(langToBeSet!="null" && langToBeSet === language ){
+                    return
+                }
+                if(language === "null"){
+                    langToBeSet = "en";
+                }
+                if(langToBeSet === "null"){
+                    langToBeSet = language;
+                }
+                document.cookie =  `article_lang=${langToBeSet}; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+                console.log("location1");
+                const currentPathWithoutLang = window.location.pathname.replace(/^\/[a-zA-Z]{2}\//, '/');
+                const newUrl = `/${langToBeSet}${currentPathWithoutLang}`;
+                window.history.pushState({}, '', newUrl);
+                console.log("location2");
+                window.location.reload();
+            };
+        </script>
+    </body>
+</html>

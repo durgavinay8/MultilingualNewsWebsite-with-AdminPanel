@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{ article['title_' + language] }}</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style-article.css') }}">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
+            rel="stylesheet">
+        <link rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+        <link rel="alternate" hreflang="en" href="http://example.com/en/page" />
+        <link rel="alternate" hreflang="es" href="http://example.com/es/page" />
+        <link rel="alternate" hreflang="fr" href="http://example.com/fr/page" />
+    </head>
+    <body>
+        {% include 'header.html' %}
+        <main>
+            <div class="article_wrapper">
+                <div class="article-header">
+                    <div class="main-img-wrapper"><img src="{{ article.main_img_url }}" alt="article-img" class="article-img"></div>
+                    <h1 class="article-title">{{ article['title_' + language] }}</h1>
+                    <h2 class="short-description">{{ article['summary_' + language] }}</h2>
+                    <div class="author-name">{{author.author_name}}</div>
+                    <div class="date-time-container">{{article.date_time}}</div>
+                </div>
+                <div class="article-body">{{ article['content_'+language] |safe }}</div>
+                <div class="flex-row" id="about-author-wrapper">
+                    <div>
+                        <img src="{{author.author_img_url}}" alt="author-image" class="author-img">
+                    </div>
+                    <div class="author-details">
+                        <p>About the Author</p>
+                        <p class="author-name">{{author.author_name}}</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <!-- {% include 'footer.html' %} -->
+        <script>
+            const getLanguageFromCookie = async()=>{
+                return document.cookie
+                .split("; ")
+                .find((row) => row.startsWith("article_lang"))
+                ?.split("=")[1];
+            };
+            const changeLanguage = async(langToBeSet)=>{
+                const language = await getLanguageFromCookie();
+                if(langToBeSet!="null" && langToBeSet === language ){
+                    return
+                }
+                if(language === "null"){
+                    langToBeSet = "en";
+                }
+                if(langToBeSet === "null"){
+                    langToBeSet = language;
+                }
+                document.cookie = `article_lang=${langToBeSet}; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+                console.log("location1");
+                const currentPathWithoutLang = window.location.pathname.replace(/^\/[a-zA-Z]{2}\//, '/');
+                const newUrl = `/${langToBeSet}${currentPathWithoutLang}`;
+                window.history.pushState({}, '', newUrl);
+                console.log("location2");
+                window.location.reload();
+            };
+        </script>
+    </body>
+</html>
