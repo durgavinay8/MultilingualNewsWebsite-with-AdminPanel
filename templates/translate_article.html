@@ -33,32 +33,44 @@
             <h2 id="heading">{{ title }}</h2>
             <hr>
             <form method="post">
+                <div class="mb-3 title">
+                    <div>Title (English)</div>
+                    <p id="title_en">{{article.title_en}}</p>
+                </div>
+                <hr>
+                <div class="mb-3">
+                    <div>Summary (English)</div>
+                    <p id="summary_en">{{article.summary_en}}</p>
+                </div>
+                <hr>
+                <div class="mb-3">
+                    <div>Content (English)</div>
+                    <p id="content_en">{{article.content_en}}</p>
+                </div>
+                <hr>
+
+                <!-- <input type="hidden" name="translated_lang" value="{{ language }}"> -->
                 <div class="mb-3 form-group title">
-                    <label for="title_en" class="form-label">Title (English)</label>
-                    <textarea type="text" class="form-control" id="title_en" name="title_en" required>{{article.title_en}}</textarea>
+                    <label for="title_{{ language }}" class="form-label">Title ({{language}})</label>
+                    <textarea type="text" class="form-control" id="title_{{ language }}" name="title_{{ language }}" required>{{ article['title_' + language] }}</textarea>
                 </div>
                 <hr>
                 <div class="mb-3 form-group">
-                    <label for="summary_en" class="form-label">Summary (English)</label>
-                    <textarea type="text" class="form-control" id="summary_en" name="summary_en" required>{{article.summary_en}}</textarea>
-                </div>
-                <hr>
-                <div class="mb-3 form-group flex-row">
-                    <label for="author_id" class="form-label">Author ID</label>
-                    <input type="number" class="form-control" id="author_id" name="author_id" value="{{article.author_id}}" required>
-                    <label for="main_img_url" class="form-label">Main Image Url</label>
-                    <input type="url" class="form-control" id="main_img_url" name="main_img_url" value="{{article.main_img_url}}" required>
+                    <label for="summary_{{ language }}" class="form-label">Summary ({{language}})</label>
+                    <textarea type="text" class="form-control" id="summary_{{ language }}" name="summary_{{ language }}" required>{{ article['summary_' + language] }}</textarea>
                 </div>
                 <hr>
                 <div class="mb-3 form-group">
-                    <label for="content_textarea_en" class="form-label">Content (English)</label>
-                    <textarea class="form-control" id="content_textarea" name="content_textarea_en" required>{{article.content_en}}</textarea>
+                    <label for="content_textarea_{{ language }}" class="form-label">Content ({{language}})</label>
+                    <textarea class="form-control" id="content_textarea" name="content_textarea_{{ language }}" required>{{ translate_content }}</textarea>
                 </div>
+                <hr>
                 <button type="submit" class="btn btn-primary">Save</button>
             </form>
         </div>
         <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.2/socket.io.js"></script>
     </body>
 </html>

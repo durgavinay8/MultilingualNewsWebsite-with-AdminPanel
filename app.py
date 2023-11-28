@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup, NavigableString
 from datetime import datetime
     
 app = Flask(__name__)
-# socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode='eventlet')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SECRET_KEY'] = '#123456'
 db = SQLAlchemy(app)
@@ -67,6 +67,7 @@ def login():
 
     return render_template('admin_login.html')
 
+#client routes
 @app.route('/')
 @app.route('/<language>/')
 @app.route('/home/')
@@ -82,47 +83,6 @@ def homepage(language='none'):
     response = make_response(render_template('home_page.html', title="Home", articles=articles, language=language))
     response.set_cookie('article_lang',language, max_age=30 * 24 * 60 * 60, path='/')
     return response
-
-
-@app.route("/admin")
-def serve_adminpanel():
-    if 'user_id' in session:
-        articles = Article.query.with_entities(Article.article_id, Article.title_en, Article.author_id, Article.date_time, Article.main_img_url, Article.summary_en).all() #order_by(Article.article_id.desc())
-        return render_template('admin_panel.html', title="Admin Panel", articles=articles, user=session['username'])
-    else:
-        return redirect(url_for('login'))
-
-# Admin logout
-@app.route('/admin/logout')
-def logout():
-    session.pop('user_id', None)
-    return redirect(url_for('login'))
-
-@app.route("/admin/create-article", methods=['GET', 'POST'])
-def create_article():
-    article = Article(title_en="", title_hi="",title_ta="",title_te="",summary_en="",summary_hi="",summary_ta="",summary_te="",author_id="",main_img_url="",content_en=" ",content_te=" ",content_ta=" ",content_hi=" ")
-    if request.method == 'POST':
-        new_article = Article(
-            title_en = request.form.get('title_en'),
-            title_hi = request.form.get('title_hi'),
-            title_ta = request.form.get('title_ta'),
-            title_te = request.form.get('title_te'),
-            summary_en = request.form.get('summary_en'),
-            summary_hi = request.form.get('summary_hi'),
-            summary_ta = request.form.get('summary_ta'),
-            summary_te = request.form.get('summary_te'),
-            author_id = request.form.get('author_id'),
-            main_img_url = request.form.get('main_img_url'),
-            content_en = request.form.get('content_textarea_en'),
-            content_te = request.form.get('content_textarea_te'),
-            content_hi = request.form.get('content_textarea_hi'),
-            content_ta = request.form.get('content_textarea_ta')
-        )
-        db.session.add(new_article)
-        db.session.commit()
-        print("Created Successfully")
-        return redirect(url_for('serve_adminpanel'))
-    return render_template('create_article.html', title="Create Article", article=article)
 
 @app.route("/<language>/article/<int:article_id>")
 def serve_article(article_id, language='none'):
@@ -147,29 +107,136 @@ def serve_article(article_id, language='none'):
     response = make_response(render_template('article.html', article=article, author=author, language=language))
     response.set_cookie('article_lang',language, max_age=31 * 24 * 60 * 60, path='/')
     return response
-# 2023-12-27T17:33:14.275Z
+
+#admin routes
+@app.route("/admin")
+def serve_adminpanel():
+    if 'user_id' in session:
+        user_id = session['user_id']
+        if user_id == 1001:
+            articles = Article.query.with_entities(Article.article_id, Article.title_en, Article.author_id, Article.date_time, Article.main_img_url, Article.summary_en).all()
+            return render_template('admin_panel.html', title="Admin Panel", articles=articles, user=session['username'])
+        else:
+            match user_id:
+                case 1002:
+                    language = 'ta'
+                case 1003:
+                    language = 'te'
+                case 1004:
+                    language = 'hi'
+                case _:
+                    language = 'en'
+            userid_column = getattr(Article, f"translator_{language}_userid")
+            articles = Article.query.with_entities(Article.article_id, Article.title_en, Article.date_time, Article.summary_en).filter(userid_column == user_id).all() 
+            return render_template('translator_panel.html', articles=articles, user=session['username'], language=language)
+    else:
+        return redirect(url_for('login'))
+
+# Admin logout
+@app.route('/admin/logout')
+def logout():
+    session.pop('user_id', None)
+    return redirect(url_for('login'))
+
+@app.route("/admin/create-article", methods=['GET', 'POST'])
+def create_article():
+    article = Article(title_en="",summary_en="",author_id="",main_img_url="",content_en=" ") #,translator_te_userid="",translator_hi_userid="",translator_ta_userid=""
+    if request.method == 'POST':
+        new_article = Article(
+            title_en = request.form.get('title_en'),
+            summary_en = request.form.get('summary_en'),
+            author_id = request.form.get('author_id'),
+            main_img_url = request.form.get('main_img_url'),
+            content_en = request.form.get('content_textarea_en')
+        )
+        db.session.add(new_article)
+        db.session.commit()
+        return redirect(url_for('serve_adminpanel'))
+    return render_template('create_article.html', title="Create Article", article=article)
+
+@app.route("/admin/<int:article_id>/translations")
+def serve_translations(article_id):
+    article = Article.query.get_or_404(article_id)
+    return render_template('all_translations.html', article=article)
+
 @app.route("/admin/<int:article_id>/update", methods=['GET','POST'])
 def update_article(article_id):
-    article = Article.query.get_or_404(article_id)
+    article = (
+        Article.query
+        .with_entities(Article.title_en, Article.summary_en, Article.content_en, Article.author_id, Article.main_img_url)
+        .filter(Article.article_id==article_id)
+        .first()
+    )
+    if article is None:
+        return 'Article not found'
     if request.method == 'POST':
         article.title_en = request.form.get('title_en')
-        article.title_hi = request.form.get('title_hi')
-        article.title_ta = request.form.get('title_ta')
-        article.title_te = request.form.get('title_te')
         article.summary_en = request.form.get('summary_en')
-        article.summary_hi = request.form.get('summary_hi')
-        article.summary_ta = request.form.get('summary_ta')
-        article.summary_te = request.form.get('summary_te')
         article.author_id = request.form.get('author_id')
         article.main_img_url = request.form.get('main_img_url')
         article.content_en = request.form.get('content_textarea_en')
-        article.content_ta = request.form.get('content_textarea_ta')
-        article.content_hi = request.form.get('content_textarea_hi')
-        article.content_te = request.form.get('content_textarea_te')
-        
+
         db.session.commit()
         return redirect(url_for('serve_adminpanel'))
     return render_template('create_article.html', title="Update Article", article=article)
+
+def translate_tag(tag, translator, target_language):
+    translated_tag = tag
+    for child in translated_tag.contents:
+        if isinstance(child, NavigableString):
+            translated_text = translator.translate(str(child), dest=target_language).text
+            child.replace_with(translated_text)
+        elif child is not None and child.name:
+            translated_child = translate_tag(child, translator, target_language)
+            child.replace_with(translated_child)
+
+    return translated_tag
+
+@app.route("/admin/<int:article_id>/translate/<language>", methods=['GET','POST'])
+def translate_article(article_id, language):
+    if language == 'en' or language not in available_langs:
+        return ""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    title_column = getattr(Article, f"title_{language}")
+    summary_column = getattr(Article, f"summary_{language}")
+    content_column = getattr(Article, f"content_{language}")
+    translated_by = getattr(Article, f"translator_{language}_userid")
+    article = (
+        Article.query
+        .with_entities(Article.title_en, Article.summary_en, Article.content_en, translated_by, title_column, summary_column, content_column) 
+        .filter(Article.article_id==article_id)
+        .first()
+    )
+    if request.method == 'POST':
+        article[f"title_{language}"] = request.form.get(f"title_{language}")
+        article[f"summary_{language}"] = request.form.get(f"summary_{language}")
+        article[f"content_{language}"] = request.form.get(f"content_{language}")
+        article[f"translator_{language}_userid"] = session['user_id']
+        
+        db.session.commit()
+        return redirect(url_for('serve_adminpanel'))
+    
+    soup = BeautifulSoup(article[f"content_{language}"], 'html.parser')
+    translator = Translator()
+    
+    for p_tag in soup.find_all('p'):
+        translated_fragments = []
+
+        for child in p_tag.contents:
+            if isinstance(child, NavigableString):
+                translated_text = translator.translate(str(child), dest=language).text
+                translated_fragments.append(translated_text)
+            elif child is not None and child.name:
+                translated_child = translate_tag(child, translator, language)
+                translated_fragments.append(str(translated_child))
+
+        p_tag.clear()
+        p_tag.append(BeautifulSoup(''.join(translated_fragments), 'html.parser'))
+    translate_content = str(soup)
+
+    return render_template('translate_article.html', title="Translate Article", article=article, translate_content = translate_content,language=language)
+
 
 @app.route('/admin/<article_id>/delete')
 def delete_entry(article_id):
@@ -178,9 +245,43 @@ def delete_entry(article_id):
     db.session.commit()
     return redirect(url_for('serve_adminpanel'))
 
+users = {}
+#sockets
+@socketio.on('connect')
+def handle_connect():
+    users[session.get('user_id')] = request.sid
+    print("users : ", users)
+    print('Client connected and user_id : ', session.get('user_id'))
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Client disconnected and user_id : ', session.get('user_id'))
+
+@socketio.on('translation_request')
+def handle_translation_request(data):
+    print("handle_translation_request ", data)
+    user_id = int(data['user_id'])
+    article_id = data['article_id']
+    language = data['language']
+    article = (
+        Article.query
+        .with_entities(Article.article_id, Article.title_en, Article.summary_en, Article.author_id)
+        .filter(Article.article_id==article_id)
+        .first()
+    )
+    if article is None:
+        return 'Article not found'
+    article_dict = {
+        'article_id': article.article_id,
+        'title_en': article.title_en,
+        'summary_en': article.summary_en,
+        'author_id': article.author_id,
+    }
+    socketio.emit('receive_translation_request', {'article': article_dict, 'translate_to': language}, room = users[user_id])
+
 if __name__ == '__main__':
     print(datetime.utcnow())
     with app.app_context():
         db.create_all()
         db.session.commit()
-    app.run(debug = True)
+    socketio.run(app, debug=True)

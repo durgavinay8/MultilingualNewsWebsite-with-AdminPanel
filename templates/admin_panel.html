@@ -56,8 +56,9 @@
                     <td>{{ article.summary_en }}</td>
                     <td><a href="{{ article.main_img_url }}" target="_blank">Show</a></td>
                     <td class="actions-col">
-                        <a id="view_btn" href='/article/{{ article.article_id }}'  class="link-primary">View</a>
+                        <a id="translations_btn" href='/admin/{{ article.article_id }}/translations' class="link-primary">Translations</a>
                         <a id="edit_btn" href='/admin/{{ article.article_id }}/update'  class="link-primary">Edit</a>
+                        <a id="view_btn" href='/article/{{ article.article_id }}'  class="link-primary">View</a>
                         <a id="delete_btn" href='/admin/{{ article.article_id }}/delete'  class="link-primary">Delete</a>
                     </td>
                 </tr>
