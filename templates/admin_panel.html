@@ -11,6 +11,14 @@
             gap: 20px;
             margin-bottom: 15px;
         }
+        #heading-right-cont{
+            display: flex;
+            gap: 20px;
+        }
+        #user-details-wrapper{
+            display: flex;
+            flex-direction: column;
+        }
         #heading-left-cont{
             flex-grow: 1;
             display: flex;
@@ -30,8 +38,11 @@
                 <button id="new_article_btn" onclick="location.href='/admin/create-article'" type="button" class="btn btn-primary">Add Article</button>
             </div>
             <div id="heading-right-cont">
-                <div><em>User : </em></div>
-                <div><strong>{{user}}</strong></div>
+                <button id="logout_btn" onclick="location.href='/admin/logout'" type="button" class="btn btn-danger">Logout</button>
+                <div class="user-details-wrapper">
+                    <div><em>User : </em></div>
+                    <div><strong>{{user}}</strong></div>
+                </div>
             </div>
         </div>
         <table class="table table-hover">
@@ -52,13 +63,13 @@
                     <td scope="row">{{ article.article_id }}</td>
                     <td>{{ article.title_en }}</td>
                     <td>{{ article.author_id }}</td>
-                    <td>{{ article.date_time.strftime('%d-%m-%Y %M:%M:%S') }}</td>
+                    <td>{{ article.date_time.strftime('%d-%m-%Y %H:%M:%S') }}</td>
                     <td>{{ article.summary_en }}</td>
                     <td><a href="{{ article.main_img_url }}" target="_blank">Show</a></td>
                     <td class="actions-col">
                         <a id="translations_btn" href='/admin/{{ article.article_id }}/translations' class="link-primary">Translations</a>
                         <a id="edit_btn" href='/admin/{{ article.article_id }}/update'  class="link-primary">Edit</a>
-                        <a id="view_btn" href='/article/{{ article.article_id }}'  class="link-primary">View</a>
+                        <a id="view_btn" href='/en/article/{{ article.article_id }}'  class="link-primary">View</a>
                         <a id="delete_btn" href='/admin/{{ article.article_id }}/delete'  class="link-primary">Delete</a>
                     </td>
                 </tr>

@@ -45,7 +45,7 @@
                 <hr>
                 <div class="mb-3">
                     <div>Content (English)</div>
-                    <p id="content_en">{{article.content_en}}</p>
+                    <p id="content_en">{{article.content_en | safe}}</p>
                 </div>
                 <hr>
 
@@ -57,12 +57,12 @@
                 <hr>
                 <div class="mb-3 form-group">
                     <label for="summary_{{ language }}" class="form-label">Summary ({{language}})</label>
-                    <textarea type="text" class="form-control" id="summary_{{ language }}" name="summary_{{ language }}" required>{{ article['summary_' + language] }}</textarea>
+                    <textarea type="text" class="form-control" id="summary_{{ language }}" name="summary_{{ language }}">{{ article['summary_' + language] }}</textarea>
                 </div>
                 <hr>
                 <div class="mb-3 form-group">
-                    <label for="content_textarea_{{ language }}" class="form-label">Content ({{language}})</label>
-                    <textarea class="form-control" id="content_textarea" name="content_textarea_{{ language }}" required>{{ translate_content }}</textarea>
+                    <label for="content_{{ language }}" class="form-label">Content ({{language}})</label>
+                    <textarea class="form-control" id="content_textarea" name="content_{{ language }}" required>{{ article['content_' + language] | safe }}</textarea>
                 </div>
                 <hr>
                 <button type="submit" class="btn btn-primary">Save</button>

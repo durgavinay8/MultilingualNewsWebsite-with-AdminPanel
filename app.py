@@ -4,6 +4,8 @@ from flask_socketio import SocketIO
 from googletrans import Translator
 from bs4 import BeautifulSoup, NavigableString
 from datetime import datetime
+
+from sqlalchemy import null
     
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode='eventlet')
@@ -73,16 +75,16 @@ def login():
 @app.route('/home/')
 @app.route('/<language>/home/')
 def homepage(language='none'):
-    if not (request.path != '' or request.path.endswith('/home')):
-        return send_from_directory(app.static_folder, request.path[1:])
-    if language == 'none' or language not in available_langs:
-        language = request.cookies.get('article_lang', default='en')
+    if (request.path != '' or request.path.endswith('/home')):
+        # return send_from_directory(app.static_folder, request.path[1:])
+        if language == 'none' or language not in available_langs:
+            language = request.cookies.get('article_lang', default='en')
 
-    title_lang = getattr(Article, f"title_{language}")
-    articles = Article.query.with_entities(Article.article_id, title_lang, Article.date_time, Article.main_img_url).all() #order_by(Article.article_id.desc())
-    response = make_response(render_template('home_page.html', title="Home", articles=articles, language=language))
-    response.set_cookie('article_lang',language, max_age=30 * 24 * 60 * 60, path='/')
-    return response
+        title_lang = getattr(Article, f"title_{language}")
+        articles = Article.query.with_entities(Article.article_id, title_lang, Article.date_time, Article.main_img_url).all() #order_by(Article.article_id.desc())
+        response = make_response(render_template('home_page.html', title="Home", articles=articles, language=language))
+        response.set_cookie('article_lang',language, max_age=30 * 24 * 60 * 60, path='/')
+        return response
 
 @app.route("/<language>/article/<int:article_id>")
 def serve_article(article_id, language='none'):
@@ -127,7 +129,10 @@ def serve_adminpanel():
                 case _:
                     language = 'en'
             userid_column = getattr(Article, f"translator_{language}_userid")
-            articles = Article.query.with_entities(Article.article_id, Article.title_en, Article.date_time, Article.summary_en).filter(userid_column == user_id).all() 
+            title_column = getattr(Article, f"title_{language}")
+            summary_column = getattr(Article, f"summary_{language}")
+            content_column = getattr(Article, f"content_{language}")
+            articles = Article.query.with_entities(Article.article_id, Article.title_en, Article.date_time, Article.summary_en,title_column, summary_column, content_column).filter(userid_column == user_id).all() 
             return render_template('translator_panel.html', articles=articles, user=session['username'], language=language)
     else:
         return redirect(url_for('login'))
@@ -161,6 +166,18 @@ def serve_translations(article_id):
 
 @app.route("/admin/<int:article_id>/update", methods=['GET','POST'])
 def update_article(article_id):
+    if request.method == 'POST':
+        num_rows_updated = Article.query.filter_by(article_id=article_id).update({
+            'title_en' : request.form.get('title_en'),
+            'summary_en' : request.form.get('summary_en'),
+            'author_id' : request.form.get('author_id'),
+            'main_img_url' : request.form.get('main_img_url'),
+            'content_en' : request.form.get('content_textarea_en'),
+        })
+        db.session.commit()
+        if num_rows_updated == 0:
+            return "No article found with article_id: {article_id}"
+        return redirect(url_for('serve_adminpanel'))
     article = (
         Article.query
         .with_entities(Article.title_en, Article.summary_en, Article.content_en, Article.author_id, Article.main_img_url)
@@ -169,15 +186,6 @@ def update_article(article_id):
     )
     if article is None:
         return 'Article not found'
-    if request.method == 'POST':
-        article.title_en = request.form.get('title_en')
-        article.summary_en = request.form.get('summary_en')
-        article.author_id = request.form.get('author_id')
-        article.main_img_url = request.form.get('main_img_url')
-        article.content_en = request.form.get('content_textarea_en')
-
-        db.session.commit()
-        return redirect(url_for('serve_adminpanel'))
     return render_template('create_article.html', title="Update Article", article=article)
 
 def translate_tag(tag, translator, target_language):
@@ -198,6 +206,19 @@ def translate_article(article_id, language):
         return ""
     if 'user_id' not in session:
         return redirect(url_for('login'))
+    if request.method == 'POST':
+        summary = request.form.get(f"summary_{language}")
+        num_rows_updated = Article.query.filter_by(article_id=article_id).update({
+            f"title_{language}" : request.form.get(f"title_{language}"),
+            f"summary_{language}" : summary if summary else null(),
+            f"content_{language}" : request.form.get(f"content_{language}"),
+            f"translator_{language}_userid" : session['user_id']
+        })
+        db.session.commit()
+        if num_rows_updated == 0:
+            return "No article found with article_id: {article_id}"
+        return redirect(url_for('serve_adminpanel'))
+    
     title_column = getattr(Article, f"title_{language}")
     summary_column = getattr(Article, f"summary_{language}")
     content_column = getattr(Article, f"content_{language}")
@@ -208,35 +229,35 @@ def translate_article(article_id, language):
         .filter(Article.article_id==article_id)
         .first()
     )
-    if request.method == 'POST':
-        article[f"title_{language}"] = request.form.get(f"title_{language}")
-        article[f"summary_{language}"] = request.form.get(f"summary_{language}")
-        article[f"content_{language}"] = request.form.get(f"content_{language}")
-        article[f"translator_{language}_userid"] = session['user_id']
-        
-        db.session.commit()
-        return redirect(url_for('serve_adminpanel'))
-    
-    soup = BeautifulSoup(article[f"content_{language}"], 'html.parser')
     translator = Translator()
-    
-    for p_tag in soup.find_all('p'):
-        translated_fragments = []
+    translated_summary=""
+    if article[6] is None:
+        soup = BeautifulSoup(article[2], 'html.parser')
+        
+        for p_tag in soup.find_all('p'):
+            translated_fragments = []
 
-        for child in p_tag.contents:
-            if isinstance(child, NavigableString):
-                translated_text = translator.translate(str(child), dest=language).text
-                translated_fragments.append(translated_text)
-            elif child is not None and child.name:
-                translated_child = translate_tag(child, translator, language)
-                translated_fragments.append(str(translated_child))
+            for child in p_tag.contents:
+                if isinstance(child, NavigableString) and str(child).strip():
+                    translated_text = translator.translate(str(child), dest=language).text
+                    translated_fragments.append(translated_text)
+                elif child is not None and child.name:
+                    translated_child = translate_tag(child, translator, language)
+                    translated_fragments.append(str(translated_child))
 
-        p_tag.clear()
-        p_tag.append(BeautifulSoup(''.join(translated_fragments), 'html.parser'))
-    translate_content = str(soup)
-
-    return render_template('translate_article.html', title="Translate Article", article=article, translate_content = translate_content,language=language)
-
+            p_tag.clear()
+            p_tag.append(BeautifulSoup(''.join(translated_fragments), 'html.parser'))
+        translated_summary = str(soup)
+    translated_article = {
+        'title_en':article[0],
+        'summary_en':article[1],
+        'content_en':article[2],
+        'translated_by':article[3],
+        f'title_{language}': translator.translate(article[0], dest=language).text if article[4] is None and article[0] is not None else article[4],
+        f'summary_{language}': translator.translate(article[1], dest=language).text if article[5] is None and article[1] is not None else article[5],
+        f'content_{language}': translated_summary if article[6] is None else article[6],
+    }
+    return render_template('translate_article.html', title="Translate Article", article=translated_article, language=language)
 
 @app.route('/admin/<article_id>/delete')
 def delete_entry(article_id):

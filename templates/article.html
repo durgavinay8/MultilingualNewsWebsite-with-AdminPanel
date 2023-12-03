@@ -5,6 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>{{ article['title_' + language] }}</title>
         <link rel="stylesheet" href="{{ url_for('static', filename='css/style-article.css') }}">
+        <link rel="stylesheet" href="/static/css/style-header.css">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link
@@ -25,7 +26,7 @@
                     <h1 class="article-title">{{ article['title_' + language] }}</h1>
                     <h2 class="short-description">{{ article['summary_' + language] }}</h2>
                     <div class="author-name">{{author.author_name}}</div>
-                    <div class="date-time-container">{{article.date_time}}</div>
+                    <div class="date-time-container">{{article.date_time.strftime('%d-%m-%Y %H:%M:%S') }}</div>
                 </div>
                 <div class="article-body">{{ article['content_'+language] |safe }}</div>
                 <div class="flex-row" id="about-author-wrapper">
